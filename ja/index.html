@@ -618,7 +618,7 @@ fetch(API,{cache:'no-store'}).then(r=>{
   if(typeof d.alt_c!=='number')throw new Error('不正な応答: '+JSON.stringify(d).slice(0,120));
   const lvl=[98,95,90,85].find(k=>d.alt_h>=k);
   document.getElementById('alt').textContent=d.alt_c.toFixed(1);
-  document.getElementById('rest').textContent=(100-d.alt_h).toFixed(1);
+  document.getElementById('rest').textContent=(100-d.alt_c).toFixed(1);
   document.getElementById('close').textContent=F(d.close);
   document.getElementById('high').textContent=F(d.high)+'（高度 '+d.alt_h.toFixed(1)+'%）';
   document.getElementById('lev').textContent=lvl?lvl+'%':'なし（85%未満）';

@@ -63,7 +63,7 @@ function fmt(v) {
 /** The one message shape used by both /now and the daily push. Deliberately
  * flat and factual — no "buy/sell/warning" language, same text for everyone. */
 function renderReading(d) {
-  const rest = (100 - d.alt_h).toFixed(1);
+  const rest = (100 - d.alt_c).toFixed(1);
   const lines = [
     `<b>SPX Altimeter</b> — ${d.date}`,
     ``,
