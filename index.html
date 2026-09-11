@@ -590,7 +590,7 @@ fetch('data/latest.json',{cache:'no-store'}).then(r=>{
 }).then(d=>{
   if(typeof d.alt_c!=='number')throw new Error('bad response');
   document.getElementById('alt').textContent=d.alt_c.toFixed(1);
-  document.getElementById('rest').textContent=(100-d.alt_h).toFixed(1);
+  document.getElementById('rest').textContent=(100-d.alt_c).toFixed(1);
   document.getElementById('close').textContent=F(d.close);
   document.getElementById('high').textContent=F(d.high)+' (altitude '+d.alt_h.toFixed(1)+'%)';
   document.getElementById('date').textContent=d.date+' · updated '+d.updated_utc;
