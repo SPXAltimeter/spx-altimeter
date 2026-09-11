@@ -416,7 +416,111 @@ close is −0.43%</td></tr>
 channel's 7.269% slope includes inflation and excludes dividends.</p>
 <p class="fc">Yahoo Finance's endpoint is unofficial and could change or go away. Full
 source, including the backtest code, the random-walk parallelism test, and the walk-forward
-simulation, is linked at the bottom of this page.</p></div></details>
+simulation, is linked at the bottom of this page.</p></div></details><details class="det"><summary><span class="no">7</span>What the five lines mean</summary><div class="body">
+<p>The labels are based on how many months, over the past 94 years, the price actually
+reached each level.</p>
+<table>
+<thead><tr><th>Altitude</th><th>Label</th><th>Months reached (by high)</th><th>When</th></tr></thead>
+<tbody>
+<tr><td>100%</td><td><b>Ceiling</b></td><td>2 months (the anchor points themselves)</td><td>Mar 1937 / Mar 2000</td></tr>
+<tr><td>98%</td><td><b>Warning</b></td><td>5 months</td><td>Jan–Feb 1937 / Mar–Apr 2000</td></tr>
+<tr><td>95%</td><td><b>Caution</b></td><td>22 months</td><td>Two spells: 1936–37 / 1999–2000</td></tr>
+<tr><td>90%</td><td>—</td><td>39 months</td><td>1936–37 / 1998–2000</td></tr>
+<tr><td>85%</td><td>—</td><td>56 months</td><td>1933 / 1936–37 / 1998–2001</td></tr>
+<tr><td>50%</td><td><b>Mid</b></td><td>The longest-resident band</td><td>—</td></tr>
+<tr><td>0%</td><td><b>Floor</b></td><td>1 month (the anchor point)</td><td>Aug 1982</td></tr>
+</tbody></table>
+<p>Time spent at 85% or above amounts to just <b>5.9% of all months (67 months)</b>, and even
+that is concentrated in two clusters &mdash; <b>1936–37 and 1998–2001</b> &mdash; which is to
+say, the very two points the channel's ceiling is tangent to.</p></div></details><details class="det"><summary><span class="no">8</span>How to read the chart</summary><div class="body">
+<h4>Two different renderings</h4>
+<ul>
+<li><b>Purple line (Jan 1871 – Nov 1927, 683 months)</b> &mdash; Shiller's monthly data
+(Cowles Commission reconstruction). Only monthly averages are on record, with no intraday
+high/low, so this stretch can't be drawn as candles.</li>
+<li><b>Candles (Dec 1927 – present)</b> &mdash; aggregated from 24,772 daily bars on Yahoo.
+<b>Auto-switches between 1,185 monthly bars and 5,146 weekly bars</b> depending on the zoom
+level.</li>
+</ul>
+<h4>Automatic granularity switching (monthly / weekly / daily)</h4>
+<p>Zooming in automatically switches to finer bars. Which granularity is currently drawn is
+shown in the tag to the right of the range display.</p>
+<p>The switch is decided <b>not by a year count, but by pixels per candle</b>. Deciding by
+year count alone would, on a narrow phone screen, collapse fine bars into 0.2px-wide slivers
+&mdash; indistinguishable from each other while still costing render time. The chart instead
+picks the finest granularity that keeps <b>at least 1.1px per bar without exceeding 1,500
+bars</b>.</p>
+<table>
+<thead><tr><th>Granularity</th><th>Bar count</th><th>PC (930px wide)</th><th>Phone (230px)</th></tr></thead>
+<tbody>
+<tr><td>Monthly</td><td>1,868</td><td>&gt;16.3 yr</td><td>&gt;4.0 yr</td></tr>
+<tr><td>Weekly</td><td>5,146</td><td>3.4–16.3 yr</td><td>0.8–4.0 yr</td></tr>
+<tr><td><b>Daily</b></td><td><b>16,263</b></td><td>&le;3.4 yr</td><td>&le;0.8 yr</td></tr>
+</tbody></table>
+<p>You can zoom to as little as one month (21 daily bars). Past 1,500 bars, a single render
+starts exceeding 16ms and dragging begins to stutter (measured: 8.7ms at 1,185 bars, 16.6ms
+at 2,500, 35.4ms at 5,146, 262ms at 24,772).</p>
+<h4>Daily bars start in 1962</h4>
+<p><b>Daily bars from 1927 through 1961 have no intraday high/low on record.</b> All 8,509
+trading days in that stretch are O=H=L=C, so as daily candles they'd render as bodyless,
+wickless dots (intraday highs/lows start being recorded on 1962-01-02). For that reason,
+<b>any range that includes pre-1962 dates stays capped at weekly bars</b> and never drops to
+daily.</p>
+<p>Weekly bars don't have this problem &mdash; each bar is built from the spread of daily
+closes within the week. In practice, the 1928–1961 weekly high/low range averages
+<b>2.32%</b>, only slightly narrower than 1962-onward (3.1–3.3%). Only 1 of 5,146 weekly bars
+has a zero range.</p>
+<p>This is also why episodes that show as just 2 monthly candles &mdash; like the COVID crash
+&mdash; become <b>9 weekly / 41 daily</b> candles, and Black Monday becomes <b>13 weekly / 64
+daily</b>.</p>
+<p class="fc">Embedding all 16,263 daily bars as raw JSON would gzip to 253KB. Storing dates as
+day-offsets from a base date and prices as scaled integer deltas keeps it to
+<b>112KB</b> (altitude itself isn't stored &mdash; it's computed from the date).</p>
+<h4>Controls</h4>
+<ul>
+<li><b>Zoom</b> &mdash; mouse wheel (centered on the cursor), pinch on touch. Zooms in to as
+little as 3 months (13 weekly bars). Auto-switches to weekly once the range drops below 28
+years</li>
+<li><b>Pan</b> &mdash; drag (swipe horizontally on touch). Doesn't interfere with vertical page
+scrolling</li>
+<li><b>Reset to full range</b> &mdash; double-click / double-tap, or the Reset button</li>
+<li><b>Range buttons</b> &mdash; All / 1900- / 1932- (valid range) / 1950- / 1980- / 2000-.
+The current view is shown below the buttons, e.g. &ldquo;1998-03 to 2003-11&rdquo;</li>
+<li><b>Hover over the chart</b> &mdash; shows that bar's OHLC, altitude, and the
+ceiling/mid/floor price</li>
+<li><b>Channel / 25-75% / Altitude toggles</b> &mdash; show or hide each overlay</li>
+</ul>
+<p class="fc">The vertical axis auto-scales to whatever's in view. Zooming in can push the
+channel lines off-screen &mdash; that's intentional, so candles don't get squashed flat. Widen
+the range to see the whole channel.</p>
+<p class="fc">All 1,868 months of data are embedded in the page, so switching views triggers no
+network requests.</p></div></details><details class="det"><summary><span class="no">9</span>Why the slope is 7.269% (structural breaks)</summary><div class="body">
+<p>This slope isn't a universal law &mdash; it's a <b>product of the post-1933 inflation
+regime</b>. Running a piecewise-linear regression on log price and picking the optimal number
+of breakpoints by BIC supports <b>3 structural breaks</b>.</p>
+<table>
+<thead><tr><th>Breaks</th><th>BIC</th><th>Estimated break dates</th></tr></thead>
+<tbody>
+<tr><td>0</td><td>-1508.4</td><td>—</td></tr>
+<tr><td>1</td><td>-4990.9</td><td>1940-01</td></tr>
+<tr><td>2</td><td>-5366.5</td><td>1954-07, 1986-01</td></tr>
+<tr><td><b>3</b></td><td><b>-5720.0</b></td><td><b>1940-01 / 1974-01 / 2002-01</b></td></tr>
+</tbody></table>
+<table>
+<thead><tr><th>Regime</th><th>Years</th><th>Nominal</th><th>Inflation</th><th>Real</th></tr></thead>
+<tbody>
+<tr><td>1871-01–1940-01</td><td>69.0</td><td>1.46%</td><td>0.16%</td><td><b>1.30%</b></td></tr>
+<tr><td>1940-01–1974-01</td><td>34.0</td><td>6.31%</td><td>3.62%</td><td><b>2.60%</b></td></tr>
+<tr><td>1974-01–2002-01</td><td>28.0</td><td>9.18%</td><td>4.88%</td><td><b>4.10%</b></td></tr>
+<tr><td>2002-01–2026-08</td><td>24.6</td><td>8.15%</td><td>2.25%</td><td><b>5.77%</b></td></tr>
+</tbody></table>
+<p>Real growth accelerates monotonically &mdash; <b>1.30 → 2.60 → 4.10 → 5.77%</b> &mdash;
+while each regime gets shorter: <b>69 → 34 → 28 → 24.6 years</b>.</p>
+<h4>Why pre-1932 doesn't fit</h4>
+<p>Under the gold standard (1871–1933), prices were flat to deflationary over the long run, so
+nominal stock growth ran at only <b>2.13%/yr</b>. After the US left the gold standard in 1933,
+nearly 4%/yr of inflation stacked on top, pushing nominal growth into the 7%-range. Extend the
+7.269% slope back to 1871 and the price at that date sits at <b>24.7&times; the ceiling</b>.</p></div></details>
 
 <footer>
   Channel: tangent through the Mar 1937 high (18.67) and Mar 2000 high (1,552.87), extended
