@@ -77,6 +77,11 @@ border-radius:8px;padding:9px 13px;font-size:12.5px;margin:0 0 12px;display:none
 --lmid:#d95926;--linn:#6d7782;--lpre:#9085e9;--lbad:rgba(150,160,170,.13);
 --lcr:rgba(230,103,103,.18);--lcr2:rgba(201,133,0,.18);--lwn:#c98500}
 .lch{position:relative}
+.lch.fs{position:fixed;inset:0;z-index:1000;background:var(--bg);
+padding:14px 16px;display:flex;flex-direction:column;overflow:auto}
+.lch.fs .box{flex:1;min-height:0}
+.lch.fs svg{width:100%;height:100%}
+.lch button.fsb{margin-left:auto}
 .lch .ctl{display:flex;flex-wrap:wrap;gap:7px 6px;align-items:center;
 margin:0 0 10px}
 .lch .ctl2{display:flex;flex-wrap:wrap;gap:4px 14px;align-items:baseline;
@@ -211,6 +216,7 @@ padding:10px 14px;margin:12px 0;font-size:13px;border-radius:0 6px 6px 0}
     <button id="lbal" class="on">高度</button>
     <button id="lbcr">暴落30%</button>
     <button id="lbcr2">調整20%</button>
+    <button id="lfs" class="fsb" aria-label="全画面表示切り替え">⛶ フルスクリーン</button>
   </div>
   <div class="ctl2">
     <span class="rng" id="lrng">—</span>
@@ -720,6 +726,7 @@ let showCh=true, showInn=true, showAlt=true, showCr=false, showCr2=false;
 let VIS=[], LINE=[], SC=null;
 let panning=false, raf=0, lastW=0;
 const NS='http://www.w3.org/2000/svg';
+const lchEl=document.getElementById('lch');
 const cv=document.getElementById('lcv'), tip=document.getElementById('ltip');
 const rngEl=document.getElementById('lrng'), perEl=document.getElementById('lper');
 const el=(n,a)=>{const e=document.createElementNS(NS,n);
@@ -753,7 +760,10 @@ function draw(){
   while(cv.firstChild)cv.removeChild(cv.firstChild);
   const box=cv.parentNode;
   const Wd=Math.max(Math.round(box.clientWidth||900),320), nar=Wd<620;
-  const Ht=Math.round(clamp(Wd*0.46,300,640));
+  const isFs=lchEl.classList.contains('fs');
+  const Ht=isFs
+    ? Math.round(clamp(box.clientHeight||(innerHeight-140),260,2200))
+    : Math.round(clamp(Wd*0.46,300,640));
   cv.setAttribute('viewBox','0 0 '+Wd+' '+Ht);
   const ml=nar?44:62, mr=nar?50:118, mt=nar?12:16, mb=nar?24:28;
   const hA=showAlt?(nar?68:112):0, gp=showAlt?(nar?14:24):0;
@@ -1050,6 +1060,31 @@ function resetView(){
   vT0=LIM0;vT1=lim1();clearPreset();
   pw2.firstChild&&pw2.firstChild.classList.add('on');req();}
 document.getElementById('lrst').onclick=resetView;
+
+// フルスクリーン切り替え。対応環境では Fullscreen API も併用し、非対応環境
+// (主に iOS Safari) では CSS の position:fixed によるフォールバックのみで動く。
+const fsBtn=document.getElementById('lfs');
+function setFs(on){
+  lchEl.classList.toggle('fs',on);
+  fsBtn.textContent=on?'✕ フルスクリーンを終了':'⛶ フルスクリーン';
+  fsBtn.classList.toggle('on',on);
+  req();
+}
+fsBtn.onclick=()=>{
+  const goingFs=!lchEl.classList.contains('fs');
+  if(goingFs&&lchEl.requestFullscreen){
+    lchEl.requestFullscreen().catch(()=>{});
+  }else if(!goingFs&&document.fullscreenElement){
+    document.exitFullscreen().catch(()=>{});
+  }
+  setFs(goingFs);
+};
+document.addEventListener('fullscreenchange',()=>{
+  if(!document.fullscreenElement&&lchEl.classList.contains('fs'))setFs(false);
+});
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'&&lchEl.classList.contains('fs')&&!document.fullscreenElement)setFs(false);
+});
 
 // プリセットは左端をその年ちょうどに置く（-PADY すると手前の月が入ってしまう）。
 // ただし全期間だけは端まで広げ、これ以上ズームアウトできない状態にする。
