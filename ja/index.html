@@ -212,7 +212,6 @@ padding:10px 14px;margin:12px 0;font-size:13px;border-radius:0 6px 6px 0}
     <button id="lrst" class="rst">リセット</button>
     <span style="flex:1"></span>
     <button id="lbch" class="on">チャネル</button>
-    <button id="lbin" class="on">25/75%</button>
     <button id="lbal" class="on">高度</button>
     <button id="lbcr">暴落30%</button>
     <button id="lbcr2">調整20%</button>
@@ -512,10 +511,10 @@ N(50.58, 18.91²)。<b>チャネル中心の 50% が平均・中央値の両方�
 最小で3ヶ月分（週足13本）まで寄れます。28年を切ると自動で週足になります</li>
 <li><b>移動</b> ─ ドラッグ（タッチは横になぞる）。縦のページスクロールは邪魔しません</li>
 <li><b>全期間に戻す</b> ─ ダブルクリック／ダブルタップ、または「リセット」ボタン</li>
-<li><b>期間ボタン</b> ─ 全期間 / 1900- / 1932-（有効域）/ 1950- / 1980- / 2000-。
+<li><b>期間ボタン</b> ─ 全期間 / 1932-（有効域）/ 2000-。
 現在の表示範囲はボタンの下に「1998-03 〜 2003-11」のように出ます</li>
 <li><b>チャート上をなぞる</b> ─ その足の高値・安値・終値、高度、上限/中央/下限の価格が出ます</li>
-<li><b>チャネル・25/75%・高度</b> ─ 表示の切り替え</li>
+<li><b>チャネル・高度</b> ─ 表示の切り替え</li>
 </ul>
 <p class="fc">縦軸は表示範囲に合わせて自動で伸縮します。拡大するとチャネル線が画面外に出ることが
 ありますが、これは<b>ローソクが縦に潰れないようにするため</b>です。チャネル全体を見たいときは
@@ -690,8 +689,7 @@ const pick=(span,pw,t0)=>
 const altOf=(S,i)=>((Math.log(S.c[i])-(AU+BU*S.t[i])+W)/W*100);
 const altHOf=(S,i)=>((Math.log(S.h[i])-(AU+BU*S.t[i])+W)/W*100);
 const alt=i=>altOf(MO,i);
-const PRE=[['全期間 1871-',1871],['1900-',1900],['1932- 有効域',1932.4],
-           ['1950-',1950],['1980-',1980],['2000-',2000]];
+const PRE=[['全期間 1871-',1871],['1932- 有効域',1932.4],['2000-',2000]];
 // 月足高値からの下落20%以上（チャネル有効域=1932-06以降の15件）。s:1=30%以上(赤)
 // p/b は月初（マーカーを置く月の特定用）、pt/bt は実際に高値・安値をつけた日。
 // 帯の左右に月初を使うと、拡大したとき最大25日ぶん左へずれる。
@@ -1099,7 +1097,6 @@ PRE.forEach(([lab,v])=>{const b=document.createElement('button');b.textContent=l
 const tg=(id,get,set)=>{const b=document.getElementById(id);
   b.onclick=()=>{set(!get());b.classList.toggle('on',get());req();};};
 tg('lbch',()=>showCh,v=>showCh=v);
-tg('lbin',()=>showInn,v=>showInn=v);
 tg('lbal',()=>showAlt,v=>showAlt=v);
 tg('lbcr',()=>showCr,v=>showCr=v);
 tg('lbcr2',()=>showCr2,v=>showCr2=v);
