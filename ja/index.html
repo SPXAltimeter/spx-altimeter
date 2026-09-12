@@ -216,7 +216,7 @@ padding:10px 14px;margin:12px 0;font-size:13px;border-radius:0 6px 6px 0}
     <button id="lbal" class="on">高度</button>
     <button id="lbcr">暴落30%</button>
     <button id="lbcr2">調整20%</button>
-    <button id="lfs" class="fsb" aria-label="全画面表示切り替え">⛶ フルスクリーン</button>
+    <button id="lfs" class="fsb" aria-label="全画面表示を切り替え">⛶ 全画面</button>
   </div>
   <div class="ctl2">
     <span class="rng" id="lrng">—</span>
@@ -724,7 +724,7 @@ const lim1=()=>lastT()+PADY, maxSpan=()=>lim1()-LIM0;
 let vT0=(typeof D.start==='number'?D.start:LIM0), vT1=lim1();
 let showCh=true, showInn=true, showAlt=true, showCr=false, showCr2=false;
 let VIS=[], LINE=[], SC=null;
-let panning=false, raf=0, lastW=0;
+let panning=false, raf=0, lastW=0, lastH=0;
 const NS='http://www.w3.org/2000/svg';
 const lchEl=document.getElementById('lch');
 const cv=document.getElementById('lcv'), tip=document.getElementById('ltip');
@@ -1066,7 +1066,7 @@ document.getElementById('lrst').onclick=resetView;
 const fsBtn=document.getElementById('lfs');
 function setFs(on){
   lchEl.classList.toggle('fs',on);
-  fsBtn.textContent=on?'✕ フルスクリーンを終了':'⛶ フルスクリーン';
+  fsBtn.textContent=on?'✕ 全画面終了':'⛶ 全画面';
   fsBtn.classList.toggle('on',on);
   req();
 }
@@ -1157,8 +1157,15 @@ function mergeInto(S,a,hasEnd){
 window.__lchMergeWeeks=function(a){return mergeInto(WK,a,true);};
 window.__lchMergeDays=function(a){return mergeInto(DY,a,false);};
 if(window.ResizeObserver){
-  new ResizeObserver(es=>{const w=Math.round(es[0].contentRect.width);
-    if(w&&w!==lastW){lastW=w;req();}}).observe(cv.parentNode);
+  new ResizeObserver(es=>{
+    const w=Math.round(es[0].contentRect.width);
+    const h=Math.round(es[0].contentRect.height);
+    // 通常時は幅の変化のみで足りる(高さは幅から算出するため)。フルスクリーン
+    // 時は高さも独立して効くので、そちらも変化を監視する。
+    if((w&&w!==lastW)||(lchEl.classList.contains('fs')&&h!==lastH)){
+      lastW=w;lastH=h;req();
+    }
+  }).observe(cv.parentNode);
 }else{addEventListener('resize',req);}
 draw();
 })();</script>
