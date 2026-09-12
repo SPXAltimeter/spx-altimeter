@@ -1130,6 +1130,15 @@ if(window.ResizeObserver){
 }else{addEventListener('resize',req);}
 draw();
 })();</script>
-<!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "a085160146ec4fb098ed4b33a5ac3f74"}'></script><!-- End Cloudflare Web Analytics -->
+<script>
+(function(){
+  try{
+    var u='https://spx-altimeter-bot.spxaltimeter.workers.dev/beacon?p='
+      +encodeURIComponent(location.pathname)+'&r='+encodeURIComponent(document.referrer);
+    if(navigator.sendBeacon){navigator.sendBeacon(u);}
+    else{fetch(u,{mode:'no-cors',keepalive:true});}
+  }catch(e){}
+})();
+</script>
 </body>
 </html>

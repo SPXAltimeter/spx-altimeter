@@ -153,6 +153,66 @@ async function sendDaily(env) {
   console.log(`daily push: sent to ${sent} subscribers`);
 }
 
+/** Analytics Engine is write-only from inside a Worker (writeDataPoint()).
+ * Reading it back requires calling OUT to the separate SQL HTTP API with a
+ * Cloudflare API token that has "Account Analytics Engine: Read" — hence
+ * env.CF_ACCOUNT_ID / env.CF_API_TOKEN, distinct from the write-side binding
+ * env.PAGEVIEWS. See DEPLOY.md for how those two are set up. */
+async function aeSql(env, query) {
+  const r = await fetch(
+    `https://api.cloudflare.com/client/v4/accounts/${env.CF_ACCOUNT_ID}/analytics_engine/sql`,
+    { method: "POST", headers: { Authorization: `Bearer ${env.CF_API_TOKEN}` }, body: query }
+  );
+  const j = await r.json();
+  if (!r.ok) throw new Error("AE SQL " + r.status + ": " + JSON.stringify(j).slice(0, 300));
+  return j.data || [];
+}
+
+function escHtml(s) {
+  return String(s).replace(/[&<>"']/g, (c) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+  }[c]));
+}
+
+async function renderAnalytics(env) {
+  const DS = "spx_pageviews"; // must match the dataset name bound as PAGEVIEWS
+  const [byPath, byDay, byRef, byCountry] = await Promise.all([
+    aeSql(env, `SELECT blob1 AS path, count() AS n FROM ${DS} WHERE timestamp > NOW() - INTERVAL '30' DAY GROUP BY path ORDER BY n DESC`),
+    aeSql(env, `SELECT toDate(timestamp) AS day, count() AS n FROM ${DS} WHERE timestamp > NOW() - INTERVAL '14' DAY GROUP BY day ORDER BY day DESC`),
+    aeSql(env, `SELECT blob3 AS ref, count() AS n FROM ${DS} WHERE timestamp > NOW() - INTERVAL '30' DAY GROUP BY ref ORDER BY n DESC LIMIT 10`),
+    aeSql(env, `SELECT blob2 AS country, count() AS n FROM ${DS} WHERE timestamp > NOW() - INTERVAL '30' DAY GROUP BY country ORDER BY n DESC LIMIT 10`),
+  ]);
+  const rows = (arr, cols) => arr.length
+    ? arr.map((r) => `<tr>${cols.map((c) => `<td>${escHtml(r[c])}</td>`).join("")}</tr>`).join("")
+    : `<tr><td colspan="${cols.length}" class="mut">no data yet</td></tr>`;
+  const html = `<!doctype html><html><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SPX Altimeter — Analytics</title>
+<style>
+body{font:14px -apple-system,system-ui,sans-serif;background:#0d1014;color:#e9edf2;
+margin:0;padding:32px;max-width:720px}
+h1{font-size:19px;margin:0 0 4px}
+.mut{color:#79838e;font-size:12.5px;margin:0 0 32px}
+h2{font-size:14px;color:#a6b0bb;margin:32px 0 6px;font-weight:600}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
+td,th{padding:6px 14px 6px 0;border-bottom:1px solid #232a31;text-align:left;font-size:13.5px}
+th{color:#79838e;font-weight:600;font-size:11.5px;letter-spacing:.03em}
+td:last-child,th:last-child{text-align:right}
+</style></head><body>
+<h1>SPX Altimeter — Access Analytics</h1>
+<p class="mut">直近30日（一部は直近14日）／ bot・クローラーは除外</p>
+<h2>ページ別（30日）</h2>
+<table><tr><th>Path</th><th>Views</th></tr>${rows(byPath, ["path", "n"])}</table>
+<h2>日別（14日）</h2>
+<table><tr><th>Day</th><th>Views</th></tr>${rows(byDay, ["day", "n"])}</table>
+<h2>参照元（30日・上位10）</h2>
+<table><tr><th>Referrer</th><th>Views</th></tr>${rows(byRef, ["ref", "n"])}</table>
+<h2>国（30日・上位10）</h2>
+<table><tr><th>Country</th><th>Views</th></tr>${rows(byCountry, ["country", "n"])}</table>
+</body></html>`;
+  return new Response(html, { headers: { "content-type": "text/html;charset=utf-8" } });
+}
+
 export default {
   async fetch(req, env, ctx) {
     const url = new URL(req.url);
@@ -177,6 +237,42 @@ export default {
       // real cron. Gated behind the same secret so it isn't a public toggle.
       await sendDaily(env);
       return new Response("daily push sent");
+    }
+
+    if (url.pathname === "/beacon") {
+      // Fire-and-forget pageview logger, called from both static pages.
+      // Accepts GET (navigator.sendBeacon posts with no meaningful body, a
+      // plain fetch fallback uses GET) — method doesn't matter, only the
+      // query params do.
+      const path = (url.searchParams.get("p") || "/").slice(0, 40);
+      let ref = "(direct)";
+      try {
+        const raw = url.searchParams.get("r") || "";
+        ref = raw ? new URL(raw).hostname : "(direct)";
+      } catch (e) { ref = "(direct)"; }
+      const country = req.cf && req.cf.country ? req.cf.country : "XX";
+      const ua = req.headers.get("User-Agent") || "";
+      // Skip obvious non-human traffic so it doesn't pollute the counts.
+      if (!/bot|spider|crawl|headless|curl|python-requests|monitor|uptime/i.test(ua) && env.PAGEVIEWS) {
+        env.PAGEVIEWS.writeDataPoint({
+          blobs: [path, country, ref.slice(0, 60), ua.slice(0, 120)],
+          doubles: [1],
+          indexes: [path],
+        });
+      }
+      return new Response(null, { status: 204 });
+    }
+
+    if (url.pathname === "/admin/analytics") {
+      const token = url.searchParams.get("token") || "";
+      if (!env.ANALYTICS_TOKEN || token !== env.ANALYTICS_TOKEN) {
+        return new Response("unauthorized", { status: 401 });
+      }
+      try {
+        return await renderAnalytics(env);
+      } catch (e) {
+        return new Response("query error: " + e.message, { status: 500 });
+      }
     }
 
     return new Response("SPX Altimeter bot. See /webhook (Telegram only).", { status: 200 });
