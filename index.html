@@ -603,7 +603,7 @@ fetch('data/latest.json',{cache:'no-store'}).then(r=>{
       (df>=0?'+':'')+df.toFixed(1)+'%</td></tr>';});
   document.getElementById('levels').innerHTML=rows.join('');
   const age=(Date.now()-new Date(d.updated_utc).getTime())/86400000;
-  if(age>3){const s=document.getElementById('stale');
+  if(age>3.5){const s=document.getElementById('stale');
     s.style.display='block';
     s.textContent='This data is '+age.toFixed(1)+' days old. The daily update may be paused.';}
   if(window.__lchSetLatest)window.__lchSetLatest(d);

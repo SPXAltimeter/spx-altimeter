@@ -637,7 +637,7 @@ fetch(API,{cache:'no-store'}).then(r=>{
       (df>=0?'+':'')+df.toFixed(1)+'%</td></tr>';});
   document.getElementById('levels').innerHTML=rows.join('');
   const age=(Date.now()-new Date(d.updated_utc).getTime())/86400000;
-  if(age>2.5){const s=document.getElementById('stale');
+  if(age>3.5){const s=document.getElementById('stale');
     s.style.display='block';
     s.textContent='⚠ データが '+age.toFixed(1)+' 日前のものです。'+
       'GitHub Actions の日次更新が停止している可能性があります。';}
