@@ -91,6 +91,34 @@ def build_days(rows, n=RECENT_DAYS):
             for d, c, h, o, lo in rows[-n:]]
 
 
+def build_months(rows, n=15):
+    """Recent monthly OHLC (confirmed months + the in-progress one), built
+    from daily bars so the embedded chart's monthly series can be patched
+    even if several months pass between rebuilds of index.html/ja/index.html.
+
+    __lchMergeMonths (in the page's embedded JS) merges every bar in this
+    list by ym, not just the newest one, so any months missed by a stale
+    build get backfilled automatically instead of leaving a gap.
+    """
+    bk = {}
+    for d, c, h, o, lo in rows:
+        k = (d.year, d.month)
+        b = bk.get(k)
+        if b is None:
+            bk[k] = {"o": o, "h": h, "l": lo, "c": c}
+        else:
+            b["h"] = max(b["h"], h)
+            b["l"] = min(b["l"], lo)
+            b["c"] = c
+    out = []
+    for y, m in sorted(bk)[-n:]:
+        b = bk[(y, m)]
+        out.append({"ym": f"{y:04d}-{m:02d}", "t": round(y + (m - 1) / 12.0, 6),
+                    "o": round(b["o"], 2), "h": round(b["h"], 2),
+                    "l": round(b["l"], 2), "c": round(b["c"], 2)})
+    return out
+
+
 def main():
     os.makedirs(DATA_DIR, exist_ok=True)
     try:
@@ -120,8 +148,13 @@ def main():
     with open(os.path.join(DATA_DIR, "weeks.json"), "w", encoding="utf-8") as f:
         json.dump(weeks, f, ensure_ascii=False, separators=(",", ":"))
 
+    months = {"updated_utc": latest["updated_utc"], "months": build_months(daily)}
+    with open(os.path.join(DATA_DIR, "months.json"), "w", encoding="utf-8") as f:
+        json.dump(months, f, ensure_ascii=False, separators=(",", ":"))
+
     print(f"latest.json: {date} close={close:.2f} altitude={latest['alt_c']:.1f}%")
     print(f"weeks.json: {len(weeks['weeks'])} weeks + {len(weeks['days'])} days")
+    print(f"months.json: {len(months['months'])} months")
     return 0
 
 

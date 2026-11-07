@@ -197,6 +197,11 @@ fetch('data/weeks.json',{{cache:'no-store'}})
     if(w.weeks&&window.__lchMergeWeeks)window.__lchMergeWeeks(w.weeks);
     if(w.days&&window.__lchMergeDays)window.__lchMergeDays(w.days);
   }}).catch(()=>{{}});
+fetch('data/months.json',{{cache:'no-store'}})
+  .then(r=>r.ok?r.json():null)
+  .then(m=>{{
+    if(m&&m.months&&window.__lchMergeMonths)window.__lchMergeMonths(m.months);
+  }}).catch(()=>{{}});
 </script>
 <script>{CH_JS}</script>
 </body>
